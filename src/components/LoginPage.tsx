@@ -1,23 +1,28 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { Music, ExternalLink } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
-import { Music, Headphones, PlayCircle } from 'lucide-react';
-import { User, Artist } from '../App';
-import svgPaths from '../imports/svg-ir3vwxpl10';
+import api from '../services/api';
+import type { User } from '../App';
 
-// Mock data for demonstration
-const mockArtists: Artist[] = [
-  { id: '1', name: 'KENSHI YONEZU', genre: 'J-Pop', playCount: 1500, imageUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400', connections: ['2', '3'] },
-  { id: '2', name: 'CHANGMO', genre: 'K-Hip Hop', playCount: 1200, imageUrl: 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=400', connections: ['1', '4'] },
-  { id: '3', name: 'IU', genre: 'K-Pop', playCount: 1800, imageUrl: 'https://images.unsplash.com/photo-1516280440614-37939bbacd81?w=400', connections: ['1', '5'] },
-  { id: '4', name: 'Zico', genre: 'K-Hip Hop', playCount: 900, imageUrl: 'https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=400', connections: ['2', '6'] },
-  { id: '5', name: 'TWICE', genre: 'K-Pop', playCount: 1100, imageUrl: 'https://images.unsplash.com/photo-1540331547168-8b63109225b7?w=400', connections: ['3', '7'] },
-  { id: '6', name: 'Dean', genre: 'K-R&B', playCount: 800, imageUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400', connections: ['4', '8'] },
-  { id: '7', name: 'BLACKPINK', genre: 'K-Pop', playCount: 1300, imageUrl: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=400', connections: ['5', '9'] },
-  { id: '8', name: 'Crush', genre: 'K-R&B', playCount: 700, imageUrl: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400', connections: ['6'] },
-  { id: '9', name: 'BTS', genre: 'K-Pop', playCount: 2100, imageUrl: 'https://images.unsplash.com/photo-1665615839740-f9cfcc9568f9?w=400', connections: ['7', '3'] },
-  { id: '10', name: 'NewJeans', genre: 'K-Pop', playCount: 950, imageUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400', connections: ['3', '5'] }
-];
+// Platform icons as SVG components
+const SpotifyIcon = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/>
+  </svg>
+);
+
+const AppleIcon = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09l.01-.01zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
+  </svg>
+);
+
+const YouTubeIcon = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+  </svg>
+);
 
 interface LoginPageProps {
   onLogin: (user: User) => void;
@@ -27,48 +32,121 @@ interface LoginPageProps {
 export function LoginPage({ onLogin, onJoinShare }: LoginPageProps) {
   const [shareLink, setShareLink] = useState('');
   const [isJoining, setIsJoining] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handlePlatformLogin = (platform: 'spotify' | 'apple' | 'youtube') => {
-    // Mock login - in real app this would use OAuth
-    const mockUser: User = {
-      id: Math.random().toString(36).substr(2, 9),
-      name: 'Music Lover',
-      platform,
-      profileImage: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400',
-      topArtists: mockArtists
+  // Check if user is coming back from OAuth callback
+  useEffect(() => {
+    const checkAuthStatus = async () => {
+      try {
+        // Check if we have a session
+        const response = await api.user.getProfile();
+        if (response.data) {
+          // User is authenticated, fetch their data
+          const [profileRes, artistsRes] = await Promise.all([
+            api.user.getProfile(),
+            api.user.getTopArtists('medium_term'),
+          ]);
+
+          const profile = profileRes.data;
+          const artists = artistsRes.data.items;
+
+          // Convert Spotify data to our User format
+          const user: User = {
+            id: profile.id,
+            name: profile.display_name || 'Music Lover',
+            platform: 'spotify',
+            profileImage: profile.images?.[0]?.url || '',
+            topArtists: artists.slice(0, 10).map((artist: any, index: number) => ({
+              id: artist.id,
+              name: artist.name,
+              genre: artist.genres[0] || 'Unknown',
+              playCount: artist.popularity * 10, // Mock play count from popularity
+              imageUrl: artist.images[0]?.url || '',
+              connections: index < artists.length - 1 ? [artists[index + 1].id] : [],
+            })),
+          };
+
+          onLogin(user);
+        }
+      } catch (err) {
+        // Not authenticated yet, that's fine
+        console.log('Not authenticated');
+      }
     };
-    
-    onLogin(mockUser);
+
+    checkAuthStatus();
+  }, [onLogin]);
+
+  const handleSpotifyLogin = () => {
+    setError(null);
+    // Redirect to Spotify OAuth
+    api.auth.login();
   };
 
-  const handleJoinShareLink = () => {
-    if (!shareLink.trim()) return;
-    
+  const handleJoinShareLink = async () => {
+    if (!shareLink.trim()) {
+      setError('Please enter a share link');
+      return;
+    }
+
     setIsJoining(true);
-    
-    // Mock share link joining
-    setTimeout(() => {
-      const mockUser: User = {
-        id: Math.random().toString(36).substr(2, 9),
-        name: 'Friend',
+    setError(null);
+
+    try {
+      // Extract link ID from URL or use as-is
+      const linkId = shareLink.includes('/')
+        ? shareLink.split('/').pop() || shareLink
+        : shareLink;
+
+      // Get the shared preference data
+      const preferenceRes = await api.preference.getLink(linkId);
+
+      // Accept and compare with our data (requires authentication)
+      const comparisonRes = await api.preference.acceptLink(linkId);
+
+      const comparison = comparisonRes.data;
+      const otherUserData = preferenceRes.data;
+
+      // Convert to our User format
+      const otherUser: User = {
+        id: comparison.otherUser.id,
+        name: comparison.otherUser.display_name,
         platform: 'spotify',
-        profileImage: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400',
-        topArtists: mockArtists.slice(0, 5) // Different subset for variety
+        profileImage: comparison.otherUser.images?.[0]?.url || '',
+        topArtists: otherUserData.topArtists.slice(0, 10).map((artist: any, index: number) => ({
+          id: artist.id,
+          name: artist.name,
+          genre: artist.genres[0] || 'Unknown',
+          playCount: artist.popularity * 10,
+          imageUrl: artist.images[0]?.url || '',
+          connections: index < otherUserData.topArtists.length - 1
+            ? [otherUserData.topArtists[index + 1].id]
+            : [],
+        })),
       };
-      
-      const matchPercentage = 86; // Mock match percentage
-      onJoinShare(mockUser, matchPercentage);
+
+      onJoinShare(otherUser, comparison.matchPercentage);
+    } catch (err: any) {
+      console.error('Error joining share link:', err);
+      setError(
+        err.response?.data?.message ||
+        'Failed to join share link. Please check the link and try again.'
+      );
+    } finally {
       setIsJoining(false);
-    }, 1500);
+    }
   };
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-black px-6">
       {/* Title and Description */}
       <div className="text-center mb-12">
-        <h1 className="text-4xl font-bold text-white mb-3">
-          Music Taste Visualizer
-        </h1>
+        <div className="flex items-center justify-center gap-3 mb-3">
+          <Music className="w-10 h-10 text-green-500" />
+          <h1 className="text-4xl font-bold text-white">
+            Music Taste Visualizer
+          </h1>
+        </div>
         <p className="text-gray-400">
           Discover your music taste graph and blend playlists with friends
         </p>
@@ -79,79 +157,86 @@ export function LoginPage({ onLogin, onJoinShare }: LoginPageProps) {
         <h2 className="text-xl font-bold text-white mb-8">
           Connect your music platform
         </h2>
-        
-        {/* Platform Buttons */}
-        <div className="flex items-center justify-center gap-8 group/buttons">
-          {/* Apple Music Button */}
-          <button 
-            onClick={() => handlePlatformLogin('apple')}
-            className="flex flex-col items-center gap-3 transition-all duration-300 group/apple hover:scale-110 group-hover/buttons:opacity-40 hover:!opacity-100"
-          >
-            <div className="w-32 h-32 rounded-2xl flex items-center justify-center bg-white/5 hover:bg-[#FA233B] transition-all duration-300 shadow-lg">
-              <svg className="w-16 h-16" fill="none" viewBox="0 0 45 55">
-                <g className="transition-all duration-300">
-                  <path d={svgPaths.p2a15fe00} fill="white" className="group-hover/apple:fill-white" />
-                  <path d={svgPaths.p3a1d0700} fill="white" className="group-hover/apple:fill-white" />
-                </g>
-              </svg>
-            </div>
-            <span className="text-white text-sm opacity-60 group-hover/apple:opacity-100 transition-opacity">
-              Apple Music
-            </span>
-          </button>
 
-          {/* Spotify Button */}
-          <button 
-            onClick={() => handlePlatformLogin('spotify')}
-            className="flex flex-col items-center gap-3 transition-all duration-300 group/spotify hover:scale-110 group-hover/buttons:opacity-40 hover:!opacity-100"
+        {/* Spotify Login Button */}
+        <div className="flex flex-col gap-4 w-full max-w-md">
+          <Button
+            onClick={handleSpotifyLogin}
+            className="bg-green-500 hover:bg-green-600 text-white py-6 text-lg font-semibold rounded-full transition-all"
           >
-            <div className="w-32 h-32 rounded-2xl flex items-center justify-center bg-white/5 hover:bg-white/10 transition-all duration-300 shadow-lg">
-              <svg className="w-16 h-16" fill="none" viewBox="0 0 55 55">
-                <circle cx="27.5" cy="27.5" r="27.5" fill="black" className="transition-all duration-300" />
-                <path d={svgPaths.p2b0efc40} fill="#1DB954" className="transition-all duration-300" />
-              </svg>
-            </div>
-            <span className="text-white text-sm opacity-60 group-hover/spotify:opacity-100 transition-opacity">
-              Spotify
-            </span>
-          </button>
+            <SpotifyIcon />
+            <span className="ml-3">Connect with Spotify</span>
+          </Button>
 
-          {/* YouTube Music Button */}
-          <button 
-            onClick={() => handlePlatformLogin('youtube')}
-            className="flex flex-col items-center gap-3 transition-all duration-300 group/youtube hover:scale-110 group-hover/buttons:opacity-40 hover:!opacity-100"
+          {/* Coming Soon Buttons */}
+          <Button
+            disabled
+            className="bg-gray-700 text-gray-400 py-6 text-lg font-semibold rounded-full opacity-50 cursor-not-allowed"
           >
-            <div className="w-32 h-32 rounded-2xl flex items-center justify-center bg-white/5 hover:bg-[#FF0033] transition-all duration-300 shadow-lg">
-              <svg className="w-16 h-16" fill="none" viewBox="0 0 55 55">
-                <g className="transition-all duration-300">
-                  <path d={svgPaths.p302a9100} fill="white" className="group-hover/youtube:fill-white" />
-                  <path d={svgPaths.p379ae810} fill="#FF0033" className="group-hover/youtube:fill-[#CC0028]" />
-                  <path d={svgPaths.p1b148900} fill="white" className="group-hover/youtube:fill-white" />
-                  <path d={svgPaths.p29e57a00} fill="#FF0033" className="group-hover/youtube:fill-[#CC0028]" />
-                </g>
-              </svg>
-            </div>
-            <span className="text-white text-sm opacity-60 group-hover/youtube:opacity-100 transition-opacity">
-              YouTube Music
-            </span>
-          </button>
+            <AppleIcon />
+            <span className="ml-3">Apple Music (Coming Soon)</span>
+          </Button>
+
+          <Button
+            disabled
+            className="bg-gray-700 text-gray-400 py-6 text-lg font-semibold rounded-full opacity-50 cursor-not-allowed"
+          >
+            <YouTubeIcon />
+            <span className="ml-3">YouTube Music (Coming Soon)</span>
+          </Button>
         </div>
       </div>
 
-      {/* Join Friend Link */}
-      <div className="mt-12">
-        <button
-          onClick={() => {
-            const link = prompt("Enter your friend's share link:");
-            if (link) {
-              setShareLink(link);
-              handleJoinShareLink();
-            }
-          }}
-          className="text-white text-sm underline hover:text-gray-300 transition-colors"
-        >
-          Join a friend's taste sharing
-        </button>
+      {/* Divider */}
+      <div className="flex items-center gap-4 w-full max-w-md my-8">
+        <div className="flex-1 h-px bg-gray-700"></div>
+        <span className="text-gray-500 text-sm">OR</span>
+        <div className="flex-1 h-px bg-gray-700"></div>
+      </div>
+
+      {/* Join Share Link Section */}
+      <div className="w-full max-w-md">
+        <h2 className="text-lg font-semibold text-white mb-4 text-center">
+          Join a friend's share link
+        </h2>
+
+        <div className="flex gap-2">
+          <Input
+            type="text"
+            placeholder="Paste share link or code here"
+            value={shareLink}
+            onChange={(e) => setShareLink(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleJoinShareLink()}
+            className="bg-gray-900 border-gray-700 text-white placeholder-gray-500 flex-1"
+          />
+          <Button
+            onClick={handleJoinShareLink}
+            disabled={isJoining || !shareLink.trim()}
+            className="bg-green-500 hover:bg-green-600 text-white px-6"
+          >
+            {isJoining ? (
+              <span className="flex items-center gap-2">
+                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                Joining...
+              </span>
+            ) : (
+              <ExternalLink className="w-5 h-5" />
+            )}
+          </Button>
+        </div>
+
+        {error && (
+          <p className="text-red-500 text-sm mt-2 text-center">{error}</p>
+        )}
+
+        <p className="text-gray-500 text-xs mt-3 text-center">
+          Need to connect with Spotify first to join a friend's link
+        </p>
+      </div>
+
+      {/* Footer */}
+      <div className="mt-16 text-center text-gray-600 text-sm">
+        <p>By connecting, you agree to share your music preferences</p>
       </div>
     </div>
   );
